@@ -265,6 +265,7 @@ DontGenerateBUFG: if not kAddBUFG generate
    vid_pHSync <= pHSync;
    vid_pVSync <= pVSync;
    PixelClk <= PixelClk_int;
+   vid_pDataRaw <= pDataRaw;
 end generate DontGenerateBUFG;
                  
 ----------------------------------------------------------------------------------
