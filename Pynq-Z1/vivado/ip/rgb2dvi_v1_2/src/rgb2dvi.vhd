@@ -74,6 +74,11 @@ entity rgb2dvi is
       -- Auxiliary signals 
       aRst : in std_logic; --asynchronous reset; must be reset when RefClk is not within spec
       aRst_n : in std_logic; --asynchronous reset; must be reset when RefClk is not within spec
+
+      -- HDMI passthrough signals
+      EnableRaw: in std_logic;
+      vid_pDataRaw : in std_logic_vector(29 downto 0);
+
       
       -- Video in
       vid_pData : in std_logic_vector(23 downto 0);
@@ -91,6 +96,8 @@ type dataOut_t is array (2 downto 0) of std_logic_vector(7 downto 0);
 type dataOutRaw_t is array (2 downto 0) of std_logic_vector(9 downto 0);
 signal pDataOut : dataOut_t;
 signal pDataOutRaw : dataOutRaw_t;
+signal pDataOutSelected : dataOutRaw_t;
+signal pDataOutEncoded : dataOutRaw_t;
 signal pVde, pC0, pC1 : std_logic_vector(2 downto 0);
 signal aRst_int, aPixelClkLckd : std_logic;
 signal PixelClkIO, SerialClkIO, aRstLck, pRstLck : std_logic;
@@ -156,7 +163,7 @@ DataEncoders: for i in 0 to 2 generate
       port map (
          PixelClk => PixelClk,
          SerialClk => SerialClk,
-         pDataOutRaw => pDataOutRaw(i),
+         pDataOutRaw => pDataOutEncoded(i),
          aRst => pRstLck,
          pDataOut => pDataOut(i),
          pC0 => pC0(i),
@@ -172,8 +179,12 @@ DataEncoders: for i in 0 to 2 generate
          sDataOut_p => TMDS_Data_p(i),
          sDataOut_n => TMDS_Data_n(i),
          --Encoded parallel data (raw)
-         pDataOut => pDataOutRaw(i),
+         pDataOut => pDataOutSelected(i),
          aRst => pRstLck);      
+
+   pDataOutSelected(2) <= pDataOutEncoded(2) when (EnableRaw = '0') else vid_pDataRaw(29 downto 20);
+   pDataOutSelected(1) <= pDataOutEncoded(1) when (EnableRaw = '0') else vid_pDataRaw(19 downto 10);
+   pDataOutSelected(0) <= pDataOutEncoded(0) when (EnableRaw = '0') else vid_pDataRaw( 9 downto  0);
 end generate DataEncoders;
 
 -- DVI Output conform DVI 1.0
