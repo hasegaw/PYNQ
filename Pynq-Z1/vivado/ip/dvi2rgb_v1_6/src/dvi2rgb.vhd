@@ -118,6 +118,8 @@ signal pEyeSize : eyeSize_t;
 signal aRst_int, pRst_int : std_logic;
 
 signal pData : std_logic_vector(23 downto 0);
+signal vid_pData_int : std_logic_vector(29 downto 0);
+
 signal pVDE, pHSync, pVSync : std_logic;
 signal pVDE_VI, pVDE_DVI: std_logic;
 
@@ -217,18 +219,19 @@ GenerateBUFG: if kAddBUFG generate
    ResyncToBUFG_X: entity work.ResyncToBUFG
       port map (
          -- Video in
-         piData => pData,
+         piData => "000000" & pData,
          piVDE => pVDE,
          piHSync => pHSync,
          piVSync => pVSync,
          PixelClkIn => PixelClk_int,
          -- Video out
-         poData => vid_pData,
+         poData => vid_pData_int,
          poVDE => vid_pVDE,
          poHSync => vid_pHSync,
          poVSync => vid_pVSync,
          PixelClkOut => PixelClk
       );
+      vid_pData <= vid_pData_int(23 downto 0);
 end generate GenerateBUFG;
 
 DontGenerateBUFG: if not kAddBUFG generate
