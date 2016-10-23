@@ -98,8 +98,8 @@ constant kBitslipDelay : natural := 3; --three-period delay after bitslip
 signal pAlignRst, pLockLostRst_n : std_logic; 
 signal pBitslipCnt : natural range 0 to kBitslipDelay - 1 := kBitslipDelay - 1; 
 signal pDataIn8b : std_logic_vector(7 downto 0);
-signal pDataInBnd : std_logic_vector(9 downto 0);
-signal pDataInRaw : std_logic_vector(9 downto 0);
+signal pDataInBnd_int : std_logic_vector(9 downto 0);
+signal pDataInRaw_int : std_logic_vector(9 downto 0);
 signal pMeRdy_int, pAligned, pAlignErr_int, pAlignErr_q, pBitslip : std_logic;
 signal pIDLY_LD, pIDLY_CE, pIDLY_INC : std_logic;
 signal pIDLY_CNT : std_logic_vector(kIDLY_TapWidth-1 downto 0);
@@ -122,7 +122,7 @@ InputSERDES_X: entity work.InputSERDES
       sDataIn_n => sDataIn_n,
       
       --Encoded parallel data (raw)
-      pDataIn => pDataInRaw,
+      pDataIn => pDataInRaw_int,
       
       --Control for phase alignment
       pBitslip => pBitslip,
@@ -188,7 +188,7 @@ PhaseAlignX: entity work.PhaseAlign
       PixelClk => PixelClk,
       pTimeoutOvf => pTimeoutOvf,
       pTimeoutRst => pTimeoutRst,
-      pData => pDataInRaw,
+      pData => pDataInRaw_int,
       pIDLY_CE => pIDLY_CE,
       pIDLY_INC => pIDLY_INC,
       pIDLY_CNT => pIDLY_CNT,
@@ -238,19 +238,19 @@ end process BitslipDelay;
 ChannelBondX: entity work.ChannelBond
    port map (
       PixelClk => PixelClk,
-      pDataInRaw => pDataInRaw,
+      pDataInRaw => pDataInRaw_int,
       pMeVld => pAligned,
       pOtherChVld => pOtherChVld,
       pOtherChRdy => pOtherChRdy,      
-      pDataInBnd => pDataInBnd,
+      pDataInBnd => pDataInBnd_int,
       pMeRdy => pMeRdy_int);
 
 pMeRdy <= pMeRdy_int;
 
 -- Below performs the 10B-8B decoding function
 -- DVI Specification: Section 3.3.3, Figure 3-6, page 31. 
-pDataIn8b <=   pDataInBnd(7 downto 0) when pDataInBnd(9) = '0' else
-               not pDataInBnd(7 downto 0);
+pDataIn8b <=   pDataInBnd_int(7 downto 0) when pDataInBnd_int(9) = '0' else
+               not pDataInBnd_int(7 downto 0);
                
 TMDS_Decode: process (PixelClk)
 begin
@@ -258,7 +258,7 @@ begin
       if (pMeRdy_int = '1' and pOtherChRdy = "11") then
          pDataIn <= x"00"; --added for VGA-compatibility (blank pixel needed during blanking)
          
-         case (pDataInBnd) is
+         case (pDataInBnd_int) is
             --Control tokens decode straight to C0, C1 values
             when kCtlTkn0 =>
                pC0 <= '0';
@@ -281,7 +281,7 @@ begin
                pVde <= '1'; 
                pDataIn(0) <= pDataIn8b(0);
                for iBit in 1 to 7 loop
-                  if (pDataInBnd(8) = '1') then
+                  if (pDataInBnd_int(8) = '1') then
                      pDataIn(iBit) <= pDataIn8b(iBit) xor pDataIn8b(iBit-1);
                   else
                      pDataIn(iBit) <= pDataIn8b(iBit) xnor pDataIn8b(iBit-1);
