@@ -243,7 +243,7 @@ GenerateDDC: if kEmulateDDC generate
       generic map (
          kSampleClkFreqInMHz => 200,
          kSlaveAddress => "1010000",
-         kAddrBits => 7, -- 128 byte EDID 1.x data
+         kAddrBits => 8, -- 256 byte EDID 1.x data
          kWritable => false,
          kInitFileName => kEdidFileName) -- name of file containing init values
       port map(
