@@ -93,7 +93,10 @@ entity dvi2rgb is
       
       SerialClk : out std_logic; -- advanced use only; 5x PixelClk
       aPixelClkLckd : out std_logic; -- advanced use only; PixelClk and SerialClk stable
-      
+
+      -- Passthrough Output
+      vid_pDataRaw : out std_logic_vector(29 downto 0);
+
       -- Optional DDC port
       DDC_SDA_I : in std_logic;
       DDC_SDA_O : out std_logic;
@@ -109,15 +112,19 @@ end dvi2rgb;
 
 architecture Behavioral of dvi2rgb is
 type dataIn_t is array (2 downto 0) of std_logic_vector(7 downto 0);
+type dataInRaw_t is array (2 downto 0) of std_logic_vector(9 downto 0);
 type eyeSize_t is array (2 downto 0) of std_logic_vector(kIDLY_TapWidth-1 downto 0);
 signal aLocked, SerialClk_int, PixelClk_int, pLockLostRst: std_logic;
 signal pRdy, pVld, pDE, pAlignErr, pC0, pC1 : std_logic_vector(2 downto 0);
 signal pDataIn : dataIn_t;
+signal pDataInRaw : dataInRaw_t;
 signal pEyeSize : eyeSize_t;
 
 signal aRst_int, pRst_int : std_logic;
 
 signal pData : std_logic_vector(23 downto 0);
+signal pDataRaw : std_logic_vector(29 downto 0);
+
 signal vid_pData_int : std_logic_vector(29 downto 0);
 
 signal pVDE, pHSync, pVSync : std_logic;
@@ -188,7 +195,8 @@ DataDecoders: for iCh in 2 downto 0 generate
          pMeRdy                  => pRdy(iCh),                
          pMeVld                  => pVld(iCh),                
          pVde                    => pDE(iCh),                  
-         pDataIn(7 downto 0)     => pDataIn(iCh),   
+         pDataIn(7 downto 0)     => pDataIn(iCh),
+         pDataInRaw(9 downto 0)  => pDataInRaw(iCh),
          pEyeSize                => pEyeSize(iCh)
       );
 end generate DataDecoders;
@@ -197,8 +205,13 @@ end generate DataDecoders;
 -- except that it sends blank pixel during blanking
 -- for some reason video_data uses RBG packing
 pData(23 downto 16) <= pDataIn(2); -- red is channel 2
-pData(7 downto 0) <= pDataIn(0); -- green is channel 1
-pData(15 downto 8) <= pDataIn(1); -- blue is channel 0
+pData( 7 downto  0) <= pDataIn(0);  -- green is channel 1
+pData(15 downto  8) <= pDataIn(1);  -- blue is channel 0
+
+pDataRaw(29 downto 20) <= pDataInRaw(2);
+pDataRaw(19 downto 10) <= pDataInRaw(1);
+pDataRaw( 9 downto  0) <= pDataInRaw(0);
+
 pHSync <= pC0(0); -- channel 0 carries control signals too
 pVSync <= pC1(0); -- channel 0 carries control signals too
 
@@ -231,7 +244,19 @@ GenerateBUFG: if kAddBUFG generate
          poVSync => vid_pVSync,
          PixelClkOut => PixelClk
       );
-      vid_pData <= vid_pData_int(23 downto 0);
+   vid_pData <= vid_pData_int(23 downto 0);
+
+   ResyncToBUFG_RAW_X: entity work.ResyncToBUFG
+      port map (
+         -- Video in
+         piData => pDataRaw,
+         piVDE => pVDE,
+         piHSync => pHSync,
+         piVSync => pVSync,
+         PixelClkIn => PixelClk_int,
+         -- Video out
+         poData => vid_pDataRaw
+      );
 end generate GenerateBUFG;
 
 DontGenerateBUFG: if not kAddBUFG generate
