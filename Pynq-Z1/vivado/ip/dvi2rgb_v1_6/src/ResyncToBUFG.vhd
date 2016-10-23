@@ -61,13 +61,13 @@ use UNISIM.VComponents.all;
 entity ResyncToBUFG is
    Port (
       -- Video in
-      piData : in std_logic_vector(23 downto 0);
+      piData : in std_logic_vector(29 downto 0);
       piVDE : in std_logic;
       piHSync : in std_logic;
       piVSync : in std_logic;
       PixelClkIn : in std_logic;
       -- Video out
-      poData : out std_logic_vector(23 downto 0);
+      poData : out std_logic_vector(29 downto 0);
       poVDE : out std_logic;
       poHSync : out std_logic;
       poVSync : out std_logic;
