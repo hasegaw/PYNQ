@@ -77,6 +77,10 @@ entity TMDS_Decoder is
       
       --Decoded parallel data
       pDataIn : out std_logic_vector(7 downto 0);
+
+      --Undecoded parallel data for passthrough
+      pDataInRaw : out std_logic_vector(9 downto 0);
+
       pC0 : out std_logic;
       pC1 : out std_logic;
       pVde : out std_logic;
@@ -251,6 +255,13 @@ pMeRdy <= pMeRdy_int;
 -- DVI Specification: Section 3.3.3, Figure 3-6, page 31. 
 pDataIn8b <=   pDataInBnd_int(7 downto 0) when pDataInBnd_int(9) = '0' else
                not pDataInBnd_int(7 downto 0);
+
+RawOutput: process (PixelClk, pDataInBnd_int)
+begin
+   if Rising_Edge(PixelClk) then
+      pDataInRaw <= pDataInBnd_int;
+   end if;
+end process RawOutput;
                
 TMDS_Decode: process (PixelClk)
 begin
