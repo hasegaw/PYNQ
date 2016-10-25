@@ -213,7 +213,7 @@ pDataRaw( 9 downto  0) <= pDataInRaw(0);
 
 pHSync <= pC0(0); -- channel 0 carries control signals too
 pVSync <= pC1(0); -- channel 0 carries control signals too
-pVDE <= pDE(0); -- since channels are aligned, all of them are either active or blanking at once
+pVDE <= pDE(0) and pC0(1) and (not pC0(2)); -- since channels are aligned, all of them are either active or blanking at once
 
 -- Clock outputs
 SerialClk <= SerialClk_int; -- fast 5x pixel clock for advanced use only
