@@ -659,7 +659,22 @@ class HDMI(object):
             del self._capture
         elif hasattr(self, '_display'):
             del self._display
-            
+
+    def frame_raw2(self):
+        """Returns a ndarray of the frame. (experimental)
+
+        This returns the frame as np.ndarray. Since we don't need
+        ByteArray -> np.ndarray conversion and reshape, this is
+        quite faster.
+
+        The shape of returned array should be (height, width, 3).
+        Unlike frame_raw, it doesn't have margins.
+        """
+
+        npframe = self._capture.frame2()
+        return npframe[0:self.frame_height(), 0:self.frame_width(), :]
+
+
 class Frame(object):
     """This class exposes the bytearray of the video frame buffer.
     
@@ -864,4 +879,3 @@ class Frame(object):
         image = Image.frombytes('RGB', \
                     (width, height), bytes(bytearray(npframe)))
         image.save(path, 'JPEG')
-        
