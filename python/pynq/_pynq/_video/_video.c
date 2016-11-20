@@ -48,6 +48,7 @@
 
 #include <Python.h>
 #include "_video.h"
+#include "numpy/arrayobject.h"
 
 
 static PyModuleDef _videomodule = {
@@ -78,5 +79,9 @@ PyMODINIT_FUNC PyInit__video(void){
     PyModule_AddObject(m, "_frame", (PyObject *)&videoframeType);
     PyModule_AddObject(m, "_display", (PyObject *)&videodisplayType);
     PyModule_AddObject(m, "_capture", (PyObject *)&videocaptureType);
+//    printf("running import_array\n");
+//    import_array();
+//    printf("running import_array done\n");
+
     return m;
 }

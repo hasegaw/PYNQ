@@ -294,6 +294,19 @@ static PyObject *videocapture_frame(videocaptureObject *self, PyObject *args){
     }
 }
 
+static PyObject *videocapture_frame2(videocaptureObject *self, PyObject *args){
+    unsigned int index = self->capture->curFrame;
+    Py_ssize_t nargs = PyTuple_Size(args);
+    if(nargs == 0 || (nargs == 1 && PyArg_ParseTuple(args, "I", &index))){
+        return get_frame2(self->frame, index);
+    }
+    else{
+        PyErr_Clear(); //clear possible exception set by PyArg_ParseTuple
+        PyErr_SetString(PyExc_SyntaxError, "Invalid argument");
+        return NULL;        
+    }
+}
+
 /*
  * frame_addr([index])
  * 
@@ -360,6 +373,9 @@ static PyMethodDef videocapture_methods[] = {
      "Get the state of the video capture controller."
     },
     {"frame", (PyCFunction)videocapture_frame, METH_VARARGS,
+     "Get the current frame (or the one at 'index' if specified)."
+    },
+    {"frame2", (PyCFunction)videocapture_frame2, METH_VARARGS,
      "Get the current frame (or the one at 'index' if specified)."
     },
     {"frame_addr", (PyCFunction)videocapture_frame_addr, METH_VARARGS,

@@ -59,7 +59,7 @@
 #include "_video.h"
 #include <stdint.h>
 #include "video_display.h"
-
+#include "numpy/arrayobject.h"
 
 /*****************************************************************************/
 /* Defining the dunder methods                                               */
@@ -172,6 +172,29 @@ PyObject *get_frame(videoframeObject *self, unsigned int index){
                      index, 0, NUM_FRAMES-1);
         return NULL;
     }
+    return PyByteArray_FromStringAndSize((char *)self->frame_buffer[index], 
+                                         MAX_FRAME);
+}
+
+
+/*
+ * get a bytearray object holding the frame at index
+ */
+PyObject *get_frame2(videoframeObject *self, unsigned int index){
+    import_array();
+    PyArrayObject *image_pyobj;
+    npy_intp dims[3] = { MAX_FRAME_HEIGHT, MAX_FRAME_WIDTH, 3 };
+
+    if(index < 0 || index >= NUM_FRAMES){
+        PyErr_Format(PyExc_ValueError, 
+                     "Index %d out of range [%d,%d]",
+                     index, 0, NUM_FRAMES-1);
+        return NULL;
+    }
+
+    image_pyobj = PyArray_SimpleNewFromData(3, dims, NPY_UINT8, (char *)self->frame_buffer[index]);
+    return image_pyobj;
+
     return PyByteArray_FromStringAndSize((char *)self->frame_buffer[index], 
                                          MAX_FRAME);
 }
