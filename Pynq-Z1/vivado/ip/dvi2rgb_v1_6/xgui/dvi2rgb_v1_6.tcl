@@ -13,7 +13,7 @@ proc init_gui { IPINST } {
   ipgui::add_param $IPINST -name "kEmulateDDC" -parent ${Page_0}
   set kClkRange [ipgui::add_param $IPINST -name "kClkRange" -parent ${Page_0} -layout horizontal]
   set_property tooltip {Specifies the frequency of supported pixel clocks. All preferred resolutions require "less than 120 MHz" except 1920x1080} ${kClkRange}
-  set kEdidFileName [ipgui::add_param $IPINST -name "kEdidFileName" -parent ${Page_0} -layout horizontal]
+  set kEdidFileName [ipgui::add_param $IPINST -name "kEdidFileName" -parent ${Page_0} -widget comboBox]
   set_property tooltip {The preferred resolution to specify in the EDID. This determines the resolution that most sources will use when first connected. All resolutions are 60Hz progressive.} ${kEdidFileName}
 
 
