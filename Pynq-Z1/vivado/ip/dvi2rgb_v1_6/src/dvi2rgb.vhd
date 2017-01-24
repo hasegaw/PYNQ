@@ -119,6 +119,7 @@ signal aRst_int, pRst_int : std_logic;
 
 signal pData : std_logic_vector(23 downto 0);
 signal pVDE, pHSync, pVSync : std_logic;
+signal pVDE_VI, pVDE_DVI: std_logic;
 
 begin
 
@@ -198,7 +199,11 @@ pData(7 downto 0) <= pDataIn(0); -- green is channel 1
 pData(15 downto 8) <= pDataIn(1); -- blue is channel 0
 pHSync <= pC0(0); -- channel 0 carries control signals too
 pVSync <= pC1(0); -- channel 0 carries control signals too
-pVDE <= pDE(0); -- since channels are aligned, all of them are either active or blanking at once
+
+-- One of these flags will be HI-state during pixel transfer.
+pVDE_VI <= (not PC0(0)) and (PC0(1)) and (not PC0(2)) and (not PC1(2));
+pVDE_DVI <= not (pC0(1) or pC1(1) or pC0(2) or pC1(2));
+pVDE <= pDE(0) and (pVDE_VI xor pVDE_DVI); -- since channels are aligned, all of them are either active or blanking at once
 
 -- Clock outputs
 SerialClk <= SerialClk_int; -- fast 5x pixel clock for advanced use only
