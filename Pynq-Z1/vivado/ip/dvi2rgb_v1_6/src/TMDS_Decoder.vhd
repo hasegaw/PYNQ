@@ -80,6 +80,7 @@ entity TMDS_Decoder is
       pC0 : out std_logic;
       pC1 : out std_logic;
       pVde : out std_logic;
+      pGrdBnd : out std_logic;
       
       -- Channel bonding (three data channels in total)
       pOtherChVld : in std_logic_vector(1 downto 0);
@@ -257,6 +258,15 @@ begin
    if Rising_Edge(PixelClk) then
       if (pMeRdy_int = '1' and pOtherChRdy = "11") then
          pDataIn <= x"00"; --added for VGA-compatibility (blank pixel needed during blanking)
+
+         case (pDataInBnd) is
+            when kHDMI_VI_GRDBND1 =>
+               pGrdBnd <= '1';
+            when kHDMI_VI_GRDBND2 =>
+               pGrdBnd <= '1';
+            when others =>
+               pGrdBnd <= '0';
+         end case;
          
          case (pDataInBnd) is
             --Control tokens decode straight to C0, C1 values
@@ -292,6 +302,7 @@ begin
          pC0 <= '0';
          pC1 <= '0';
          pVde <= '0';
+         pGrdBnd <= '0';
          pDataIn <= x"00";
       end if;
    end if;
