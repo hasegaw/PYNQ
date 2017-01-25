@@ -115,7 +115,7 @@ type dataIn_t is array (2 downto 0) of std_logic_vector(7 downto 0);
 type dataInRaw_t is array (2 downto 0) of std_logic_vector(9 downto 0);
 type eyeSize_t is array (2 downto 0) of std_logic_vector(kIDLY_TapWidth-1 downto 0);
 signal aLocked, SerialClk_int, PixelClk_int, pLockLostRst: std_logic;
-signal pRdy, pVld, pDE, pAlignErr, pC0, pC1 : std_logic_vector(2 downto 0);
+signal pRdy, pVld, pDE, pAlignErr, pC0, pC1, pGrdBnd : std_logic_vector(2 downto 0);
 signal pDataIn : dataIn_t;
 signal pDataInRaw : dataInRaw_t;
 signal pEyeSize : eyeSize_t;
@@ -195,6 +195,7 @@ DataDecoders: for iCh in 2 downto 0 generate
          pMeRdy                  => pRdy(iCh),                
          pMeVld                  => pVld(iCh),                
          pVde                    => pDE(iCh),                  
+         pGrdBnd                 => pGrdBnd(iCh),
          pDataIn(7 downto 0)     => pDataIn(iCh),
          pDataInRaw(9 downto 0)  => pDataInRaw(iCh),
          pEyeSize                => pEyeSize(iCh)
@@ -218,7 +219,9 @@ pVSync <= pC1(0); -- channel 0 carries control signals too
 -- One of these flags will be HI-state during pixel transfer.
 pVDE_VI <= (not PC0(0)) and (PC0(1)) and (not PC0(2)) and (not PC1(2));
 pVDE_DVI <= not (pC0(1) or pC1(1) or pC0(2) or pC1(2));
-pVDE <= pDE(0) and (pVDE_VI xor pVDE_DVI); -- since channels are aligned, all of them are either active or blanking at once
+
+-- since channels are aligned, all of them are either active or blanking at once
+pVDE <= pDE(0) and (pVDE_VI xor pVDE_DVI) and not (pGrdBnd(0) and pGrdBnd(1) and pGrdBnd(2));
 
 -- Clock outputs
 SerialClk <= SerialClk_int; -- fast 5x pixel clock for advanced use only
