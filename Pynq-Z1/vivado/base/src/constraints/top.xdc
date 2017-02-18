@@ -1,3 +1,6 @@
+set_property LOC MMCME2_ADV_X1Y2 [get_cells -hier -filter { NAME =~ *rgb2dvi_0/U0/ClockGenInternal.ClockGenX/GenMMCM.DVI_ClkGenerator }]
+set_property LOC MMCME2_ADV_X1Y1 [get_cells -hier -filter { NAME =~ *dvi2rgb_0/U0/TMDS_ClockingX/DVI_ClkGenerator }]
+
 ## Switches
 set_property -dict {PACKAGE_PIN M20 IOSTANDARD LVCMOS33} [get_ports {sws_2bits_tri_i[0]}]
 set_property -dict {PACKAGE_PIN M19 IOSTANDARD LVCMOS33} [get_ports {sws_2bits_tri_i[1]}]
