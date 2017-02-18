@@ -50,6 +50,9 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
+library ARITHMETIC;
+use ARITHMETIC.std_logic_arith.all;
+
 use work.DVI_Constants.all;
 
 -- Uncomment the following library declaration if using
@@ -67,7 +70,7 @@ entity dvi2rgb is
       kRstActiveHigh : boolean := true; --true, if active-high; false, if active-low
       kAddBUFG : boolean := true; --true, if PixelClk should be re-buffered with BUFG 
       kClkRange : natural := 2;  -- MULT_F = kClkRange*5 (choose >=120MHz=1, >=60MHz=2, >=40MHz=3)
-      kEdidFileName : string := "900p_edid.txt";  -- Select EDID file to use
+      kEdidFileName : string := "splitter_edid.txt";  -- Select EDID file to use
       -- 7-series specific
       kIDLY_TapValuePs : natural := 78; --delay in ps per tap
       kIDLY_TapWidth : natural := 5); --number of bits for IDELAYE2 tap counter   
@@ -97,6 +100,15 @@ entity dvi2rgb is
       -- Passthrough Output
       vid_pDataRaw : out std_logic_vector(29 downto 0);
 
+      debug_GrdBnd1: out std_logic_vector(2 downto 0);
+     debug_GrdBnd2: out std_logic_vector(2 downto 0);
+    debug_GrdBndCount: out std_logic_vector(1 downto 0);
+   debug_GrdBndDone: out std_logic;
+
+  debug_pC0: out std_logic_vector(2 downto 0);
+            
+ debug_pC1: out std_logic_vector(2 downto 0);
+ debug_hdmi_mode: out std_logic;
       -- Optional DDC port
       DDC_SDA_I : in std_logic;
       DDC_SDA_O : out std_logic;
@@ -104,6 +116,7 @@ entity dvi2rgb is
       DDC_SCL_I : in std_logic;
       DDC_SCL_O : out std_logic; 
       DDC_SCL_T : out std_logic;
+      
       
       pRst : in std_logic; -- synchronous reset; will restart locking procedure
       pRst_n : in std_logic -- synchronous reset; will restart locking procedure
@@ -115,7 +128,7 @@ type dataIn_t is array (2 downto 0) of std_logic_vector(7 downto 0);
 type dataInRaw_t is array (2 downto 0) of std_logic_vector(9 downto 0);
 type eyeSize_t is array (2 downto 0) of std_logic_vector(kIDLY_TapWidth-1 downto 0);
 signal aLocked, SerialClk_int, PixelClk_int, pLockLostRst: std_logic;
-signal pRdy, pVld, pDE, pAlignErr, pC0, pC1, pGrdBnd : std_logic_vector(2 downto 0);
+signal pRdy, pVld, pDE, pAlignErr, pC0, pC1, pGrdBnd1, pGrdBnd2 : std_logic_vector(2 downto 0);
 signal pDataIn : dataIn_t;
 signal pDataInRaw : dataInRaw_t;
 signal pEyeSize : eyeSize_t;
@@ -129,8 +142,60 @@ signal vid_pData_int : std_logic_vector(29 downto 0);
 
 signal pVDE, pHSync, pVSync : std_logic;
 signal pVDE_VI, pVDE_DVI: std_logic;
+signal start_of_line: std_logic;
 
-begin
+signal HDMIMode: std_logic;
+signal GrdBndCount: std_logic_vector(1 downto 0) := "00";
+signal GrdBndDone: std_logic := '0';
+
+begin 
+
+debug_GrdBnd1 <= pGrdBnd1;
+debug_GrdBnd2 <= pGrdBnd2;
+debug_GrdBndCount <= GrdBndCount;
+debug_GrdBndDone <= GrdBndDone;
+
+
+debug_pC0 <= pC0;
+debug_pC1 <= pC1;
+
+GuardBandCounter: process (PixelClk_int, pHSync) begin
+   if Rising_Edge(PixelClk_int) then
+        if (pHSync = '1') then
+            GrdBndCount <= "00";
+        elsif (HDMIMode = '0') then
+            GrdBndCount <= "00";            
+        else
+            if (pGrdBnd1 = "101") then
+               if (pGrdBnd2 = "010") then
+
+            case (GrdBndCount) is
+                when "00" => 
+                    GrdBndCount <= "01";
+                when "01" =>
+                    GrdBndCount <= "10";
+                when "10" =>
+                    GrdBndCount <= "11";
+                when "11" =>
+                        GrdBndCount <= "11";
+            end case;
+            
+                end if;
+            end if;
+        end if;    
+    end if;
+end process GuardBandCounter;
+
+GrdBndDone <= GrdBndCount(1);
+--GuardBandDoneOutput: process(PixelClk_out, GrdBndCount) begin
+--   if Rising_Edge(PixelClk_out) then
+--        if (GrdBndCount > "01") then
+--            GrdBndDone <= '1';
+--        else
+--            GrdBndDone <= '0';
+--        end if;
+--    end if;
+--end process GuardBandDoneOutput;
 
 ResetActiveLow: if not kRstActiveHigh generate
    aRst_int <= not aRst_n;
@@ -188,14 +253,15 @@ DataDecoders: for iCh in 2 downto 0 generate
          sDataIn_n               => TMDS_Data_n(iCh),                                       
          pOtherChRdy(1 downto 0) => pRdy((iCh+1) mod 3) & pRdy((iCh+2) mod 3), -- tie channels together for channel de-skew
          pOtherChVld(1 downto 0) => pVld((iCh+1) mod 3) & pVld((iCh+2) mod 3), -- tie channels together for channel de-skew
-   
+
          pAlignErr               => pAlignErr(iCh),             
          pC0                     => pC0(iCh),
          pC1                     => pC1(iCh),                    
          pMeRdy                  => pRdy(iCh),                
          pMeVld                  => pVld(iCh),                
          pVde                    => pDE(iCh),                  
-         pGrdBnd                 => pGrdBnd(iCh),
+         pGrdBnd1                => pGrdBnd1(iCh),
+         pGrdBnd2                => pGrdBnd2(iCh),
          pDataIn(7 downto 0)     => pDataIn(iCh),
          pDataInRaw(9 downto 0)  => pDataInRaw(iCh),
          pEyeSize                => pEyeSize(iCh)
@@ -217,12 +283,18 @@ pHSync <= pC0(0); -- channel 0 carries control signals too
 pVSync <= pC1(0); -- channel 0 carries control signals too
 
 -- One of these flags will be HI-state during pixel transfer.
-pVDE_VI <= (not PC0(0)) and (PC0(1)) and (not PC0(2)) and (not PC1(2));
+
+
+HDMIMode <= (not PC0(0)) and (PC0(1)) and (not PC0(2)) and (not PC1(2));
+debug_hdmi_mode <= HDMIMode;
+pVDE_VI <= (not PC0(0)) and (PC0(1)) and (not PC0(2)) and (not PC1(2))
+    -- and not (pGrdBnd1(0) and pGrdBnd2(1) and pGrdBnd1(2));
+    and GrdBndDone;
 pVDE_DVI <= not (pC0(1) or pC1(1) or pC0(2) or pC1(2));
 
 -- since channels are aligned, all of them are either active or blanking at once
-pVDE <= pDE(0) and (pVDE_VI xor pVDE_DVI) and not (pGrdBnd(0) and pGrdBnd(1) and pGrdBnd(2));
-
+pVDE <= pDE(0) and (pVDE_VI xor pVDE_DVI);
+        
 -- Clock outputs
 SerialClk <= SerialClk_int; -- fast 5x pixel clock for advanced use only
 aPixelClkLckd <= aLocked;

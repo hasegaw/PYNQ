@@ -84,7 +84,8 @@ entity TMDS_Decoder is
       pC0 : out std_logic;
       pC1 : out std_logic;
       pVde : out std_logic;
-      pGrdBnd : out std_logic;
+      pGrdBnd1 : out std_logic;
+      pGrdBnd2 : out std_logic;
       
       -- Channel bonding (three data channels in total)
       pOtherChVld : in std_logic_vector(1 downto 0);
@@ -272,11 +273,14 @@ begin
 
          case (pDataInBnd_int) is
             when kHDMI_VI_GRDBND1 =>
-               pGrdBnd <= '1';
+               pGrdBnd1 <= '1';
+               pGrdBnd2 <= '0';               
             when kHDMI_VI_GRDBND2 =>
-               pGrdBnd <= '1';
+               pGrdBnd1 <= '0';
+               pGrdBnd2 <= '1';               
             when others =>
-               pGrdBnd <= '0';
+               pGrdBnd1 <= '0';
+               pGrdBnd2 <= '0';
          end case;
          
          case (pDataInBnd_int) is
@@ -313,7 +317,8 @@ begin
          pC0 <= '0';
          pC1 <= '0';
          pVde <= '0';
-         pGrdBnd <= '0';
+         pGrdBnd1 <= '0';
+         pGrdBnd2 <= '0';
          pDataIn <= x"00";
       end if;
    end if;
